@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#080c10">
+<title>MetroWake</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────
+   DESIGN SYSTEM
+───────────────────────────────── */
+:root {
+  --bg:        #080c10;
+  --bg1:       #0e1419;
+  --bg2:       #151d24;
+  --bg3:       #1c2630;
+  --bg4:       #243040;
+  --line:      rgba(255,255,255,0.06);
+  --line2:     rgba(255,255,255,0.12);
+  --text:      #e8edf2;
+  --text2:     #7a8fa0;
+  --text3:     #3d5060;
+  --green:     #00e8a2;
+  --green2:    #00b87a;
+  --green-d:   rgba(0,232,162,0.10);
+  --green-d2:  rgba(0,232,162,0.05);
+  --red:       #ff4d6a;
+  --red-d:     rgba(255,77,106,0.12);
+  --gold:      #ffc947;
+  --gold-d:    rgba(255,201,71,0.10);
+  --r:         18px;
+  --r2:        12px;
+  --r3:        8px;
+  --f:         'Space Grotesk', sans-serif;
+  --fm:        'Space Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--f);
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── PHONE WRAPPER ─── */
+#app {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ─── STATUS BAR ─── */
+.sbar {
+  height: 44px;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+.sbar-time { font-family: var(--fm); font-size: 14px; font-weight: 700; color: var(--text); }
+.sbar-icons { display: flex; gap: 6px; align-items: center; }
+.sbar-icons svg { width: 16px; height: 16px; fill: var(--text2); }
+
+/* ─── PAGES ─── */
+.pages { flex: 1; overflow: hidden; position: relative; }
+.page {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  display: none;
+  flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.page::-webkit-scrollbar { display: none; }
+.page.active { display: flex; animation: pageIn .22s ease; }
+@keyframes pageIn { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
+
+/* ─── BOTTOM NAV ─── */
+.bnav {
+  height: 72px;
+  background: var(--bg1);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.bnav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 4px; cursor: pointer; padding: 8px 0;
+  transition: all .15s;
+}
+.bnav-item svg { width: 22px; height: 22px; transition: all .15s; }
+.bnav-item span { font-size: 10px; font-weight: 500; color: var(--text3); transition: color .15s; letter-spacing: .3px; }
+.bnav-item svg path, .bnav-item svg circle, .bnav-item svg rect { fill: var(--text3); transition: fill .15s; }
+.bnav-item.on span { color: var(--green); }
+.bnav-item.on svg path, .bnav-item.on svg circle, .bnav-item.on svg rect { fill: var(--green); }
+.bnav-badge {
+  position: absolute; top: 6px; right: calc(50% - 18px);
+  width: 8px; height: 8px; border-radius: 50%; background: var(--red);
+  display: none; border: 2px solid var(--bg1);
+}
+.bnav-badge.on { display: block; }
+
+/* ─── SECTION LABELS ─── */
+.slabel {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 1.2px;
+  padding: 0 20px; margin-bottom: 10px; margin-top: 22px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.slabel:first-child { margin-top: 0; }
+.slabel-action { font-size: 12px; color: var(--green); cursor: pointer; text-transform: none; letter-spacing: 0; font-weight: 500; }
+
+/* ─── CARDS ─── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  transition: border-color .15s, background .15s;
+}
+.card:active { background: var(--bg3); }
+
+/* ═══════════════════════════════════════
+   PAGE: HOME
+═══════════════════════════════════════ */
+#page-home { padding-bottom: 16px; }
+
+/* Hero */
+.home-hero {
+  background: linear-gradient(175deg, #0d1f18 0%, var(--bg) 65%);
+  padding: 20px 20px 24px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.hh-greeting { font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+.hh-title {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.5px;
+  color: var(--text); line-height: 1.1; margin-bottom: 4px;
+}
+.hh-title span { color: var(--green); }
+.hh-sub { font-size: 13px; color: var(--text2); }
+
+/* Active alarm banner */
+.alarm-banner {
+  margin: 16px 20px 0;
+  background: var(--green-d);
+  border: 1px solid rgba(0,232,162,0.2);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 13px;
+  cursor: pointer;
+  display: none;
+}
+.alarm-banner.show { display: flex; }
+.ab-pulse {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--green-d);
+  border: 1.5px solid var(--green);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  animation: glow 1.8s ease-in-out infinite;
+}
+@keyframes glow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,232,162,.3) }
+  50% { box-shadow: 0 0 0 10px rgba(0,232,162,0) }
+}
+.ab-pulse svg { width: 18px; height: 18px; }
+.ab-pulse svg path { fill: var(--green); }
+.ab-info { flex: 1; }
+.ab-label { font-size: 10px; font-weight: 600; color: var(--green); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+.ab-station { font-size: 16px; font-weight: 600; color: var(--text); }
+.ab-detail { font-size: 12px; color: var(--text2); margin-top: 1px; }
+.ab-dist-badge {
+  background: var(--green);
+  color: #000; font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: 20px; white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* GPS status */
+.gps-bar {
+  margin: 12px 20px 0;
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r2);
+  padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.gps-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+.gps-dot.on { background: var(--green); animation: blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.gps-text { font-size: 12px; color: var(--text2); flex: 1; }
+.gps-btn {
+  font-size: 12px; font-weight: 600; color: var(--green);
+  cursor: pointer; background: none; border: none; font-family: var(--f);
+  padding: 0;
+}
+
+.home-scroll { flex: 1; padding: 0 0 8px; }
+
+/* Fav card */
+.fav-card {
+  margin: 0 20px 8px;
+  padding: 13px 15px;
+  display: flex; align-items: center; gap: 13px;
+  cursor: pointer;
+}
+.fc-pill {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.fc-info { flex: 1; min-width: 0; }
+.fc-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.fc-route { font-size: 12px; color: var(--text2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fc-time { font-family: var(--fm); font-size: 11px; color: var(--text3); white-space: nowrap; }
+
+/* New trip btn */
+.new-trip {
+  margin: 4px 20px 0;
+  padding: 15px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer;
+  border: 1px dashed var(--line2);
+  background: transparent;
+  font-size: 13px; font-weight: 500; color: var(--text2);
+  transition: all .15s;
+}
+.new-trip:hover, .new-trip:active { border-color: var(--green); color: var(--green); background: var(--green-d2); }
+.new-trip svg { width: 16px; height: 16px; }
+.new-trip svg path { fill: currentColor; }
+
+/* Ad banner */
+.ad-strip {
+  margin: 20px 20px 0;
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r2); padding: 10px 13px;
+  display: flex; align-items: center; gap: 10px;
+}
+.ad-tag { font-size: 9px; font-weight: 700; color: var(--text3); border: 1px solid var(--line2); border-radius: 3px; padding: 2px 5px; letter-spacing: .5px; flex-shrink: 0; }
+.ad-text { font-size: 12px; color: var(--text2); flex: 1; }
+.ad-x { color: var(--text3); font-size: 16px; cursor: pointer; line-height: 1; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════
+   PAGE: SEARCH
+═══════════════════════════════════════ */
+#page-search { padding-bottom: 16px; }
+
+.search-header {
+  padding: 16px 20px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  position: sticky; top: 0; z-index: 5;
+}
+.sh-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+.search-box {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r2);
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  transition: border-color .15s;
+}
+.search-box:focus-within { border-color: rgba(0,232,162,.4); }
+.search-box svg { width: 16px; height: 16px; flex-shrink: 0; }
+.search-box svg path { fill: var(--text2); }
+.search-box input {
+  flex: 1; background: none; border: none; outline: none;
+  font-size: 15px; color: var(--text); font-family: var(--f);
+  caret-color: var(--green);
+}
+.search-box input::placeholder { color: var(--text3); }
+.search-clear { color: var(--text2); cursor: pointer; font-size: 18px; display: none; line-height: 1; }
+.search-clear.show { display: block; }
+
+.line-chips {
+  display: flex; gap: 7px; padding: 10px 20px;
+  overflow-x: auto; flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+}
+.line-chips::-webkit-scrollbar { display: none; }
+.lchip {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; cursor: pointer; color: #fff;
+  opacity: .35; transition: opacity .15s, transform .15s; flex-shrink: 0;
+  border: none;
+}
+.lchip.on { opacity: 1; transform: scale(1.1); }
+
+.results-list { flex: 1; padding: 10px 20px 16px; }
+.result-item {
+  padding: 13px 15px; margin-bottom: 7px;
+  display: flex; align-items: center; gap: 13px; cursor: pointer;
+}
+.ri-badge {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.ri-info { flex: 1; }
+.ri-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.ri-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.ri-cta {
+  background: var(--green-d); border: 1px solid rgba(0,232,162,.2);
+  color: var(--green); font-size: 11px; font-weight: 600;
+  border-radius: 20px; padding: 4px 10px; white-space: nowrap; flex-shrink: 0;
+}
+.no-results {
+  text-align: center; padding: 48px 20px;
+  font-size: 14px; color: var(--text3);
+  display: none;
+}
+.no-results.show { display: block; }
+
+/* ═══════════════════════════════════════
+   PAGE: ALARM
+═══════════════════════════════════════ */
+#page-alarm { padding-bottom: 16px; }
+
+.alarm-header {
+  padding: 14px 20px 12px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  background: var(--bg);
+}
+.alarm-back { width: 36px; height: 36px; border-radius: 10px; background: var(--bg3); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+.alarm-back svg { width: 18px; height: 18px; }
+.alarm-back svg path { fill: var(--text2); }
+.alarm-hinfo { flex: 1; }
+.alarm-htitle { font-size: 18px; font-weight: 700; color: var(--text); }
+.alarm-hsub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.alarm-hstatus { display: flex; align-items: center; gap: 6px; }
+.ah-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: blink 1.5s infinite; }
+.ah-status { font-size: 11px; color: var(--green); font-weight: 500; }
+
+.alarm-body { flex: 1; padding: 20px; }
+
+/* Journey visualizer */
+.journey-card {
+  padding: 18px; margin-bottom: 14px;
+  background: var(--bg2); border: 1px solid var(--line); border-radius: var(--r);
+}
+.jc-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+.stops-line {
+  display: flex; align-items: center;
+  overflow-x: auto; padding-bottom: 4px; gap: 0;
+}
+.stops-line::-webkit-scrollbar { display: none; }
+.stop-node { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.sc {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+  border: 2px solid var(--line2); background: var(--bg3); color: var(--text3);
+  transition: all .3s; position: relative; z-index: 1;
+}
+.sc.passed { background: var(--green2); border-color: var(--green2); color: #fff; }
+.sc.current {
+  background: var(--bg); border-color: var(--green); color: var(--green);
+  box-shadow: 0 0 0 4px var(--green-d);
+  animation: cpulse 2s ease-in-out infinite;
+}
+@keyframes cpulse { 0%,100%{box-shadow:0 0 0 4px var(--green-d)} 50%{box-shadow:0 0 0 8px rgba(0,232,162,.03)} }
+.sc.target { background: var(--red-d); border-color: var(--red); border-width: 2px; color: var(--red); font-size: 14px; }
+.sn-name { font-size: 8px; color: var(--text3); margin-top: 4px; max-width: 34px; text-align: center; line-height: 1.2; }
+.sn-name.target-label { color: var(--red); font-weight: 600; }
+.stop-conn {
+  height: 2px; flex-shrink: 0; width: 18px;
+  background: var(--line2); margin-top: -20px; position: relative; z-index: 0;
+}
+.stop-conn.passed { background: var(--green2); }
+
+.jc-stats { display: flex; gap: 10px; margin-top: 16px; }
+.jcs { flex: 1; background: var(--bg3); border-radius: var(--r3); padding: 10px 12px; }
+.jcs-val { font-family: var(--fm); font-size: 20px; font-weight: 700; color: var(--text); }
+.jcs-label { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
+/* Distance ring */
+.dist-ring-wrap {
+  display: flex; justify-content: center; align-items: center;
+  padding: 20px 0; flex-direction: column; gap: 6px;
+  margin-bottom: 14px;
+}
+.dist-ring {
+  position: relative; width: 130px; height: 130px;
+}
+.dist-ring svg { width: 130px; height: 130px; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--bg3); stroke-width: 8; }
+.ring-fill { fill: none; stroke: var(--green); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .6s; }
+.ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.ring-dist { font-family: var(--fm); font-size: 20px; font-weight: 700; color: var(--text); }
+.ring-unit { font-size: 11px; color: var(--text2); }
+.ring-status { font-size: 12px; color: var(--green); font-weight: 500; margin-top: 2px; }
+
+/* Settings card */
+.settings-card { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin-bottom: 14px; }
+.setting-row {
+  display: flex; align-items: center; gap: 13px; padding: 13px 16px;
+  border-bottom: 1px solid var(--line); position: relative;
+}
+.setting-row:last-child { border-bottom: none; }
+.sr-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sr-icon svg { width: 16px; height: 16px; }
+.sr-info { flex: 1; }
+.sr-label { font-size: 13px; font-weight: 500; color: var(--text); }
+.sr-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.tog {
+  width: 44px; height: 26px; border-radius: 13px;
+  background: var(--bg4); border: 1px solid var(--line2);
+  position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0;
+}
+.tog.on { background: var(--green); border-color: var(--green); }
+.tog-k {
+  position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; transition: left .2s;
+}
+.tog.on .tog-k { left: 21px; }
+.prem-tag {
+  background: var(--gold-d); border: 1px solid rgba(255,201,71,.25);
+  color: var(--gold); font-size: 10px; font-weight: 700;
+  border-radius: 20px; padding: 3px 9px; cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Action buttons */
+.btn {
+  width: 100%; padding: 15px; border-radius: var(--r); border: none;
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--f);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all .15s; letter-spacing: -.1px;
+  margin-bottom: 10px;
+}
+.btn:active { transform: scale(.98); }
+.btn:last-child { margin-bottom: 0; }
+.btn-primary { background: var(--green); color: #000; }
+.btn-primary:hover { background: #00f5ad; }
+.btn-danger { background: var(--red-d); color: var(--red); border: 1px solid rgba(255,77,106,.2); }
+.btn-ghost { background: var(--bg2); color: var(--text); border: 1px solid var(--line); }
+.btn svg { width: 18px; height: 18px; }
+.btn svg path { fill: currentColor; }
+
+/* ═══════════════════════════════════════
+   PAGE: PREMIUM
+═══════════════════════════════════════ */
+#page-premium { padding-bottom: 24px; }
+
+.prem-hero {
+  background: linear-gradient(165deg, #150c2e 0%, var(--bg) 70%);
+  padding: 28px 24px 26px; text-align: center;
+  border-bottom: 1px solid var(--line); flex-shrink: 0;
+}
+.prem-icon {
+  width: 60px; height: 60px; border-radius: 18px;
+  background: rgba(255,201,71,.1); border: 1px solid rgba(255,201,71,.25);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px; font-size: 26px;
+}
+.prem-title { font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -.5px; margin-bottom: 8px; }
+.prem-sub { font-size: 14px; color: var(--text2); line-height: 1.6; }
+.prem-price { display: flex; align-items: baseline; justify-content: center; gap: 4px; margin-top: 14px; }
+.pp-num { font-family: var(--fm); font-size: 38px; font-weight: 700; color: var(--gold); }
+.pp-per { font-size: 14px; color: var(--text2); }
+
+.prem-scroll { flex: 1; padding: 20px; overflow-y: auto; }
+.prem-scroll::-webkit-scrollbar { display: none; }
+
+.feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.feat-card {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r2); padding: 14px;
+}
+.feat-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(255,201,71,.1);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 9px;
+  font-size: 16px;
+}
+.feat-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.feat-desc { font-size: 11px; color: var(--text2); line-height: 1.4; }
+
+.compare-box {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r); overflow: hidden; margin-bottom: 18px;
+}
+.compare-head {
+  display: grid; grid-template-columns: 1fr 56px 56px;
+  padding: 10px 14px; border-bottom: 1px solid var(--line);
+  font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .7px;
+}
+.compare-head span:not(:first-child) { text-align: center; }
+.compare-row {
+  display: grid; grid-template-columns: 1fr 56px 56px;
+  padding: 11px 14px; border-bottom: 1px solid var(--line);
+  align-items: center; font-size: 13px; color: var(--text2);
+}
+.compare-row:last-child { border-bottom: none; }
+.compare-row span:not(:first-child) { text-align: center; font-size: 16px; }
+.c-yes { color: var(--green); }
+.c-gold { color: var(--gold); }
+.c-no { color: var(--text3); }
+
+.btn-prem {
+  width: 100%; padding: 16px;
+  background: var(--gold); color: #000;
+  border: none; border-radius: var(--r);
+  font-size: 16px; font-weight: 700; cursor: pointer; font-family: var(--f);
+  letter-spacing: -.2px; margin-bottom: 10px; transition: all .15s;
+}
+.btn-prem:active { transform: scale(.98); }
+.btn-restore {
+  width: 100%; padding: 12px; background: transparent;
+  color: var(--text2); border: 1px solid var(--line);
+  border-radius: var(--r); font-size: 13px; cursor: pointer; font-family: var(--f);
+}
+.prem-note { text-align: center; font-size: 11px; color: var(--text3); margin-top: 10px; }
+
+/* ═══════════════════════════════════════
+   PAGE: PROFILE
+═══════════════════════════════════════ */
+#page-profile { padding: 20px 20px 40px; overflow-y: auto; }
+#page-profile::-webkit-scrollbar { display: none; }
+
+.profile-head { text-align: center; padding: 20px 0 24px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+.avatar {
+  width: 70px; height: 70px; border-radius: 22px;
+  background: var(--green-d); border: 2px solid rgba(0,232,162,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700; color: var(--green);
+  margin: 0 auto 12px;
+}
+.profile-name { font-size: 20px; font-weight: 700; color: var(--text); }
+.profile-email { font-size: 13px; color: var(--text2); margin-top: 3px; }
+.profile-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--gold-d); border: 1px solid rgba(255,201,71,.25);
+  color: var(--gold); font-size: 12px; font-weight: 600;
+  border-radius: 20px; padding: 4px 12px; margin-top: 10px;
+}
+
+.menu-group { margin-bottom: 20px; }
+.mg-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.menu-box { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.menu-row {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  border-bottom: 1px solid var(--line); cursor: pointer; transition: background .15s;
+}
+.menu-row:last-child { border-bottom: none; }
+.menu-row:active { background: var(--bg3); }
+.mr-icon { font-size: 18px; width: 20px; text-align: center; flex-shrink: 0; }
+.mr-label { flex: 1; font-size: 14px; color: var(--text); }
+.mr-val { font-size: 13px; color: var(--text2); }
+.mr-arr { color: var(--text3); font-size: 16px; }
+.stat-badge { font-family: var(--fm); font-size: 14px; font-weight: 700; color: var(--green); }
+
+.app-footer { text-align: center; font-size: 11px; color: var(--text3); padding: 12px 0; }
+
+/* ═══════════════════════════════════════
+   RINGING OVERLAY
+═══════════════════════════════════════ */
+#ringing {
+  position: fixed; inset: 0; background: var(--bg);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 32px; text-align: center; z-index: 1000;
+}
+#ringing.active { display: flex; animation: pageIn .2s ease; }
+.ring-waves { position: relative; width: 150px; height: 150px; margin: 0 auto 28px; display: flex; align-items: center; justify-content: center; }
+.ring-wave {
+  position: absolute; border-radius: 50%;
+  border: 2px solid var(--red);
+  opacity: 0;
+  animation: wave 2.4s ease-out infinite;
+}
+.ring-wave:nth-child(1) { width: 80px; height: 80px; animation-delay: 0s; }
+.ring-wave:nth-child(2) { width: 110px; height: 110px; animation-delay: .5s; }
+.ring-wave:nth-child(3) { width: 150px; height: 150px; animation-delay: 1s; }
+@keyframes wave { 0%{opacity:.6;transform:scale(.8)} 100%{opacity:0;transform:scale(1.1)} }
+.ring-bell-wrap {
+  position: relative; z-index: 1;
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--red); display: flex; align-items: center; justify-content: center;
+}
+.ring-bell-wrap svg { width: 34px; height: 34px; animation: bellshake .4s ease-in-out infinite alternate; }
+.ring-bell-wrap svg path { fill: #fff; }
+@keyframes bellshake { from{transform:rotate(-22deg)} to{transform:rotate(22deg)} }
+.ring-title { font-size: 30px; font-weight: 700; color: var(--text); letter-spacing: -.5px; margin-bottom: 6px; }
+.ring-station { font-size: 22px; font-weight: 700; color: var(--red); margin-bottom: 8px; }
+.ring-sub { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 36px; }
+.btn-dismiss {
+  width: 100%; padding: 18px;
+  background: var(--red); color: #fff;
+  border: none; border-radius: var(--r);
+  font-size: 17px; font-weight: 700; cursor: pointer; font-family: var(--f);
+  letter-spacing: -.2px; margin-bottom: 12px;
+}
+.btn-dismiss:active { transform: scale(.98); }
+.btn-snooze {
+  width: 100%; padding: 13px; background: transparent;
+  color: var(--text2); border: 1px solid var(--line);
+  border-radius: var(--r); font-size: 14px; cursor: pointer; font-family: var(--f);
+}
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+#toast {
+  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+  background: var(--bg3); border: 1px solid var(--line2);
+  border-radius: 40px; padding: 10px 20px;
+  font-size: 13px; color: var(--text); font-weight: 500;
+  opacity: 0; transition: opacity .25s; z-index: 500;
+  white-space: nowrap; pointer-events: none;
+  display: flex; align-items: center; gap: 8px;
+}
+#toast.show { opacity: 1; }
+
+/* ═══════════════════════════════════════
+   UTILS
+═══════════════════════════════════════ */
+.scrollable { flex: 1; overflow-y: auto; }
+.scrollable::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- STATUS BAR -->
+  <div class="sbar">
+    <span class="sbar-time" id="clock">00:00</span>
+    <div class="sbar-icons">
+      <svg viewBox="0 0 24 24"><path d="M1.5 8.5C5.5 4.5 10.5 3 12 3s6.5 1.5 10.5 5.5l-2 2c-3-3-5.5-4.5-8.5-4.5S8 7 5.5 10l-4-1.5z"/><path d="M5 12c1.9-1.9 4.1-3 7-3s5.1 1.1 7 3l-2 2c-1.3-1.3-3-2-5-2s-3.7.7-5 2l-2-2z"/><circle cx="12" cy="19" r="2"/></svg>
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="11" rx="2"/><path d="M22 11v3"/></svg>
+    </div>
+  </div>
+
+  <!-- PAGES -->
+  <div class="pages">
+
+    <!-- ═══ HOME ═══ -->
+    <div class="page active" id="page-home">
+      <div class="home-hero">
+        <div class="hh-greeting">Bonjour 👋</div>
+        <div class="hh-title">Metro<span>Wake</span></div>
+        <div class="hh-sub">Ne rate plus jamais ta station</div>
+      </div>
+
+      <div class="alarm-banner card" id="alarm-banner" onclick="goTo('alarm')">
+        <div class="ab-pulse">
+          <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <div class="ab-info">
+          <div class="ab-label">Alarme active</div>
+          <div class="ab-station" id="banner-station">—</div>
+          <div class="ab-detail" id="banner-detail">—</div>
+        </div>
+        <div class="ab-dist-badge" id="banner-dist">—</div>
+      </div>
+
+      <div class="gps-bar card" id="gps-bar">
+        <div class="gps-dot" id="gps-dot"></div>
+        <span class="gps-text" id="gps-text">GPS non activé</span>
+        <button class="gps-btn" id="gps-btn" onclick="initGPS()">Activer</button>
+      </div>
+
+      <div class="home-scroll">
+        <div class="slabel" style="margin-top:18px">
+          <span>Favoris</span>
+          <span class="slabel-action" onclick="goTo('search')">+ Ajouter</span>
+        </div>
+        <div class="fav-card card" onclick="quickAlarm('Gare Saint-Lazare','14','Montrouge → Saint-Lazare','#5E5BFF',48.8749,2.3250)">
+          <div class="fc-pill" style="background:#5E5BFF">14</div>
+          <div class="fc-info">
+            <div class="fc-name">Boulot — Saint-Lazare</div>
+            <div class="fc-route">Montrouge → Gare Saint-Lazare</div>
+          </div>
+          <div class="fc-time">~22 min</div>
+        </div>
+        <div class="fav-card card" onclick="quickAlarm('Alésia','13','Châtillon → Alésia','#98C3E8',48.8285,2.3272)">
+          <div class="fc-pill" style="background:#98C3E8">13</div>
+          <div class="fc-info">
+            <div class="fc-name">Maison — Alésia</div>
+            <div class="fc-route">Châtillon → Alésia</div>
+          </div>
+          <div class="fc-time">~31 min</div>
+        </div>
+        <div class="fav-card card" onclick="quickAlarm('Nation','6','Étoile → Nation','#F0971D',48.8484,2.3966)">
+          <div class="fc-pill" style="background:#F0971D">6</div>
+          <div class="fc-info">
+            <div class="fc-name">Nation</div>
+            <div class="fc-route">Étoile → Nation</div>
+          </div>
+          <div class="fc-time">~18 min</div>
+        </div>
+        <div class="new-trip card" onclick="goTo('search')">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Nouveau trajet
+        </div>
+
+        <div class="slabel" style="margin-top:22px"><span>Récents</span></div>
+        <div class="fav-card card" onclick="quickAlarm('Châtelet','1','Vincennes → La Défense','#F2C931',48.8597,2.3469)">
+          <div class="fc-pill" style="background:#F2C931">1</div>
+          <div class="fc-info">
+            <div class="fc-name">Châtelet</div>
+            <div class="fc-route">Vincennes → La Défense</div>
+          </div>
+          <div class="fc-time">hier</div>
+        </div>
+
+        <div class="ad-strip card" id="ad-strip">
+          <span class="ad-tag">PUB</span>
+          <span class="ad-text">Voyagez sans stress — MetroWake Premium 2€/mois</span>
+          <span class="ad-x" onclick="document.getElementById('ad-strip').style.display='none'">×</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SEARCH ═══ -->
+    <div class="page" id="page-search">
+      <div class="search-header">
+        <div class="sh-title">Choisir une station</div>
+        <div class="search-box">
+          <svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/></svg>
+          <input type="text" id="search-input" placeholder="Cherche une station…" oninput="onSearch(this.value)" autocomplete="off">
+          <span class="search-clear" id="search-clear" onclick="clearSearch()">×</span>
+        </div>
+      </div>
+      <div class="line-chips" id="line-chips"></div>
+      <div class="results-list scrollable" id="results-list"></div>
+      <div class="no-results" id="no-results">Aucune station trouvée</div>
+    </div>
+
+    <!-- ═══ ALARM ═══ -->
+    <div class="page" id="page-alarm">
+      <div class="alarm-header">
+        <div class="alarm-back" onclick="goTo('home')">
+          <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </div>
+        <div class="alarm-hinfo">
+          <div class="alarm-htitle" id="alarm-title">—</div>
+          <div class="alarm-hsub" id="alarm-sub">—</div>
+        </div>
+        <div class="alarm-hstatus">
+          <div class="ah-dot"></div>
+          <span class="ah-status">Actif</span>
+        </div>
+      </div>
+
+      <div class="alarm-body scrollable">
+        <!-- Distance ring -->
+        <div class="dist-ring-wrap">
+          <div class="dist-ring">
+            <svg viewBox="0 0 130 130">
+              <circle class="ring-bg" cx="65" cy="65" r="56"/>
+              <circle class="ring-fill" id="ring-path" cx="65" cy="65" r="56" stroke-dasharray="351.86" stroke-dashoffset="0"/>
+            </svg>
+            <div class="ring-center">
+              <div class="ring-dist" id="ring-dist">—</div>
+              <div class="ring-unit">mètres</div>
+            </div>
+          </div>
+          <div class="ring-status" id="ring-status">En attente du GPS…</div>
+        </div>
+
+        <!-- Journey card -->
+        <div class="journey-card">
+          <div class="jc-label">Progression estimée</div>
+          <div class="stops-line" id="stops-line"></div>
+          <div class="jc-stats">
+            <div class="jcs"><div class="jcs-val" id="stat-stops">—</div><div class="jcs-label">stations</div></div>
+            <div class="jcs"><div class="jcs-val" id="stat-time">—</div><div class="jcs-label">min restantes</div></div>
+            <div class="jcs"><div class="jcs-val" id="stat-line">—</div><div class="jcs-label">ligne</div></div>
+          </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="settings-card">
+          <div class="setting-row">
+            <div class="sr-icon" style="background:var(--green-d)">
+              <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <div class="sr-info"><div class="sr-label">Vibration</div><div class="sr-sub">Vibre à l'arrivée</div></div>
+            <div class="tog on" onclick="this.classList.toggle('on')"><div class="tog-k"></div></div>
+          </div>
+          <div class="setting-row">
+            <div class="sr-icon" style="background:var(--green-d)">
+              <svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </div>
+            <div class="sr-info"><div class="sr-label">Son fort</div><div class="sr-sub">Volume maximum</div></div>
+            <div class="tog on" onclick="this.classList.toggle('on')"><div class="tog-k"></div></div>
+          </div>
+          <div class="setting-row">
+            <div class="sr-icon" style="background:var(--gold-d)">
+              <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div class="sr-info"><div class="sr-label">Alerte 1 station avant</div><div class="sr-sub">Prévenu en avance</div></div>
+            <span class="prem-tag" onclick="goTo('premium')">⭐ Premium</span>
+          </div>
+          <div class="setting-row">
+            <div class="sr-icon" style="background:var(--gold-d)">
+              <svg viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+            </div>
+            <div class="sr-info"><div class="sr-label">Mode hors-ligne</div><div class="sr-sub">Fonctionne sans réseau</div></div>
+            <span class="prem-tag" onclick="goTo('premium')">⭐ Premium</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <button class="btn btn-primary" onclick="triggerAlarmManual()">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Simuler l'arrivée (test)
+        </button>
+        <button class="btn btn-danger" onclick="cancelAlarm()">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Annuler l'alarme
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ PREMIUM ═══ -->
+    <div class="page" id="page-premium">
+      <div class="prem-hero">
+        <div class="prem-icon">⭐</div>
+        <div class="prem-title">MetroWake Premium</div>
+        <div class="prem-sub">Tout ce qu'il faut pour ne jamais<br>rater une station, même endormi.</div>
+        <div class="prem-price"><span class="pp-num">2€</span><span class="pp-per">/ mois · résiliable à tout moment</span></div>
+      </div>
+      <div class="prem-scroll">
+        <div class="feat-grid">
+          <div class="feat-card"><div class="feat-icon">📡</div><div class="feat-name">Hors-ligne</div><div class="feat-desc">Fonctionne dans les tunnels sans réseau</div></div>
+          <div class="feat-card"><div class="feat-icon">📱</div><div class="feat-name">Widget</div><div class="feat-desc">Station visible sur l'écran verrouillé</div></div>
+          <div class="feat-card"><div class="feat-icon">🔔</div><div class="feat-name">Alarme anticipée</div><div class="feat-desc">Prévenu 1 station avant l'arrivée</div></div>
+          <div class="feat-card"><div class="feat-icon">♾️</div><div class="feat-name">Illimité</div><div class="feat-desc">Autant d'alarmes que tu veux</div></div>
+          <div class="feat-card"><div class="feat-icon">🔗</div><div class="feat-name">Partage</div><div class="feat-desc">Envoie ton ETA en direct</div></div>
+          <div class="feat-card"><div class="feat-icon">🚫</div><div class="feat-name">Sans pub</div><div class="feat-desc">Expérience 100% propre</div></div>
+        </div>
+        <div class="compare-box">
+          <div class="compare-head"><span>Fonctionnalité</span><span>Gratuit</span><span style="color:var(--gold)">Premium</span></div>
+          <div class="compare-row"><span>Alarme GPS</span><span class="c-yes">✓</span><span class="c-gold">✓</span></div>
+          <div class="compare-row"><span>2 alarmes max</span><span class="c-yes">✓</span><span class="c-no">—</span></div>
+          <div class="compare-row"><span>Alarmes illimitées</span><span class="c-no">—</span><span class="c-gold">✓</span></div>
+          <div class="compare-row"><span>Mode hors-ligne</span><span class="c-no">—</span><span class="c-gold">✓</span></div>
+          <div class="compare-row"><span>Widget écran</span><span class="c-no">—</span><span class="c-gold">✓</span></div>
+          <div class="compare-row"><span>Alerte anticipée</span><span class="c-no">—</span><span class="c-gold">✓</span></div>
+          <div class="compare-row"><span>Partage de trajet</span><span class="c-no">—</span><span class="c-gold">✓</span></div>
+          <div class="compare-row"><span>Sans publicité</span><span class="c-no">—</span><span class="c-gold">✓</span></div>
+        </div>
+        <button class="btn-prem" onclick="showToast('✅ 7 jours gratuits activés — Bienvenue !')">Essayer 7 jours gratuits → 2€/mois</button>
+        <button class="btn-restore" onclick="showToast('Aucun achat trouvé.')">Restaurer les achats</button>
+        <div class="prem-note">Résiliable à tout moment · Paiement sécurisé</div>
+      </div>
+    </div>
+
+    <!-- ═══ PROFILE ═══ -->
+    <div class="page" id="page-profile">
+      <div class="profile-head">
+        <div class="avatar">T</div>
+        <div class="profile-name">Thomas D.</div>
+        <div class="profile-email">thomas@email.com</div>
+        <div class="profile-tag">⭐ Premium actif</div>
+      </div>
+      <div class="menu-group">
+        <div class="mg-label">Compte</div>
+        <div class="menu-box">
+          <div class="menu-row" onclick="showToast('Premium · 2€/mois')"><span class="mr-icon">⭐</span><span class="mr-label">Mon abonnement</span><span class="mr-val" style="color:var(--gold)">Premium</span><span class="mr-arr">›</span></div>
+          <div class="menu-row" onclick="showToast('Notifications activées')"><span class="mr-icon">🔔</span><span class="mr-label">Notifications</span><span class="mr-val">Actives</span><span class="mr-arr">›</span></div>
+          <div class="menu-row" onclick="showToast('Langue : Français')"><span class="mr-icon">🌐</span><span class="mr-label">Langue</span><span class="mr-val">Français</span><span class="mr-arr">›</span></div>
+        </div>
+      </div>
+      <div class="menu-group">
+        <div class="mg-label">Statistiques</div>
+        <div class="menu-box">
+          <div class="menu-row"><span class="mr-icon">📍</span><span class="mr-label">Stations détectées</span><span class="stat-badge">47</span><span class="mr-arr">›</span></div>
+          <div class="menu-row"><span class="mr-icon">⏱</span><span class="mr-label">Temps économisé</span><span class="stat-badge">~3h</span><span class="mr-arr">›</span></div>
+        </div>
+      </div>
+      <div class="menu-group">
+        <div class="mg-label">Support</div>
+        <div class="menu-box">
+          <div class="menu-row" onclick="showToast('Ouverture aide…')"><span class="mr-icon">❓</span><span class="mr-label">Aide & FAQ</span><span class="mr-arr">›</span></div>
+          <div class="menu-row" onclick="showToast('Merci pour ton retour !')"><span class="mr-icon">⭐</span><span class="mr-label">Laisser un avis</span><span class="mr-arr">›</span></div>
+          <div class="menu-row" onclick="shareApp()"><span class="mr-icon">📤</span><span class="mr-label">Partager l'app</span><span class="mr-arr">›</span></div>
+        </div>
+      </div>
+      <div class="app-footer">MetroWake v1.0 · Fait avec ❤️ · <span id="station-count-footer">302</span> stations</div>
+    </div>
+
+  </div><!-- /pages -->
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <div class="bnav-item on" id="nav-home" onclick="goTo('home')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Accueil</span>
+    </div>
+    <div class="bnav-item" id="nav-search" onclick="goTo('search')">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Chercher</span>
+    </div>
+    <div class="bnav-item" id="nav-alarm" onclick="goTo('alarm')" style="position:relative">
+      <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Alarme</span>
+      <div class="bnav-badge" id="alarm-badge"></div>
+    </div>
+    <div class="bnav-item" id="nav-premium" onclick="goTo('premium')">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span>Premium</span>
+    </div>
+    <div class="bnav-item" id="nav-profile" onclick="goTo('profile')">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Profil</span>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- RINGING OVERLAY -->
+<div id="ringing">
+  <div class="ring-waves">
+    <div class="ring-wave"></div>
+    <div class="ring-wave"></div>
+    <div class="ring-wave"></div>
+    <div class="ring-bell-wrap">
+      <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </div>
+  </div>
+  <div class="ring-title">C'est ta station !</div>
+  <div class="ring-station" id="ring-station-name">—</div>
+  <div class="ring-sub">Prépare-toi à descendre.<br>Tu es arrivé à destination !</div>
+  <button class="btn-dismiss" onclick="dismissAlarm()">OK, j'ai vu ! ✓</button>
+  <button class="btn-snooze" onclick="showToast('Report activé — station suivante')">Reporter à la prochaine station</button>
+</div>
+
+<!-- TOAST -->
+<div id="toast">✓ <span id="toast-msg"></span></div>
+
+<script>
+// ═══════════════════════════════════════
+// DONNÉES — 302 stations métro Paris
+// Coordonnées GPS officielles RATP
+// ═══════════════════════════════════════
+const STATIONS = [
+  // LIGNE 1
+  {n:"La Défense",l:"1",lat:48.8919,lng:2.2387,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Esplanade de la Défense",l:"1",lat:48.8880,lng:2.2502,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Pont de Neuilly",l:"1",lat:48.8849,lng:2.2614,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Les Sablons",l:"1",lat:48.8790,lng:2.2714,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Porte Maillot",l:"1",lat:48.8787,lng:2.2825,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Argentine",l:"1",lat:48.8749,lng:2.2930,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Charles de Gaulle-Étoile",l:"1",lat:48.8738,lng:2.2950,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"George V",l:"1",lat:48.8724,lng:2.3007,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Franklin D. Roosevelt",l:"1",lat:48.8690,lng:2.3095,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Champs-Élysées - Clemenceau",l:"1",lat:48.8664,lng:2.3133,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Concorde",l:"1",lat:48.8656,lng:2.3211,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Tuileries",l:"1",lat:48.8638,lng:2.3302,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Palais Royal - Musée du Louvre",l:"1",lat:48.8638,lng:2.3367,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Châtelet",l:"1",lat:48.8597,lng:2.3469,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Hôtel de Ville",l:"1",lat:48.8571,lng:2.3516,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Saint-Paul",l:"1",lat:48.8549,lng:2.3598,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Bastille",l:"1",lat:48.8533,lng:2.3692,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Gare de Lyon",l:"1",lat:48.8442,lng:2.3733,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Reuilly - Diderot",l:"1",lat:48.8491,lng:2.3882,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Nation",l:"1",lat:48.8484,lng:2.3966,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Bérault",l:"1",lat:48.8474,lng:2.4129,c:"#F2C931",d:"Château de Vincennes"},
+  {n:"Château de Vincennes",l:"1",lat:48.8449,lng:2.4395,c:"#F2C931",d:"Château de Vincennes"},
+  // LIGNE 2
+  {n:"Porte Dauphine",l:"2",lat:48.8714,lng:2.2737,c:"#007DC5",d:"Nation"},
+  {n:"Victor Hugo",l:"2",lat:48.8712,lng:2.2869,c:"#007DC5",d:"Nation"},
+  {n:"Ternes",l:"2",lat:48.8784,lng:2.2981,c:"#007DC5",d:"Nation"},
+  {n:"Courcelles",l:"2",lat:48.8797,lng:2.3054,c:"#007DC5",d:"Nation"},
+  {n:"Monceau",l:"2",lat:48.8808,lng:2.3120,c:"#007DC5",d:"Nation"},
+  {n:"Villiers",l:"2",lat:48.8826,lng:2.3148,c:"#007DC5",d:"Nation"},
+  {n:"Rome",l:"2",lat:48.8836,lng:2.3218,c:"#007DC5",d:"Nation"},
+  {n:"Place de Clichy",l:"2",lat:48.8837,lng:2.3282,c:"#007DC5",d:"Nation"},
+  {n:"Blanche",l:"2",lat:48.8837,lng:2.3330,c:"#007DC5",d:"Nation"},
+  {n:"Pigalle",l:"2",lat:48.8835,lng:2.3375,c:"#007DC5",d:"Nation"},
+  {n:"Anvers",l:"2",lat:48.8829,lng:2.3435,c:"#007DC5",d:"Nation"},
+  {n:"Barbès - Rochechouart",l:"2",lat:48.8836,lng:2.3496,c:"#007DC5",d:"Nation"},
+  {n:"La Chapelle",l:"2",lat:48.8833,lng:2.3575,c:"#007DC5",d:"Nation"},
+  {n:"Stalingrad",l:"2",lat:48.8843,lng:2.3668,c:"#007DC5",d:"Nation"},
+  {n:"Jaurès",l:"2",lat:48.8831,lng:2.3704,c:"#007DC5",d:"Nation"},
+  {n:"Colonel Fabien",l:"2",lat:48.8785,lng:2.3720,c:"#007DC5",d:"Nation"},
+  {n:"Belleville",l:"2",lat:48.8715,lng:2.3708,c:"#007DC5",d:"Nation"},
+  {n:"Couronnes",l:"2",lat:48.8673,lng:2.3797,c:"#007DC5",d:"Nation"},
+  {n:"Ménilmontant",l:"2",lat:48.8649,lng:2.3856,c:"#007DC5",d:"Nation"},
+  {n:"Père Lachaise",l:"2",lat:48.8618,lng:2.3893,c:"#007DC5",d:"Nation"},
+  {n:"Philippe Auguste",l:"2",lat:48.8570,lng:2.3919,c:"#007DC5",d:"Nation"},
+  {n:"Alexandre Dumas",l:"2",lat:48.8531,lng:2.3939,c:"#007DC5",d:"Nation"},
+  {n:"Avron",l:"2",lat:48.8504,lng:2.3981,c:"#007DC5",d:"Nation"},
+  // LIGNE 3
+  {n:"Pont de Levallois - Bécon",l:"3",lat:48.8977,lng:2.2852,c:"#7DC241",d:"Gallieni"},
+  {n:"Anatole France",l:"3",lat:48.8965,lng:2.2925,c:"#7DC241",d:"Gallieni"},
+  {n:"Louise Michel",l:"3",lat:48.8943,lng:2.2991,c:"#7DC241",d:"Gallieni"},
+  {n:"Porte de Champerret",l:"3",lat:48.8917,lng:2.2988,c:"#7DC241",d:"Gallieni"},
+  {n:"Pereire",l:"3",lat:48.8887,lng:2.2982,c:"#7DC241",d:"Gallieni"},
+  {n:"Wagram",l:"3",lat:48.8860,lng:2.3073,c:"#7DC241",d:"Gallieni"},
+  {n:"Malesherbes",l:"3",lat:48.8826,lng:2.3149,c:"#7DC241",d:"Gallieni"},
+  {n:"Europe",l:"3",lat:48.8800,lng:2.3222,c:"#7DC241",d:"Gallieni"},
+  {n:"Saint-Lazare",l:"3",lat:48.8749,lng:2.3250,c:"#7DC241",d:"Gallieni"},
+  {n:"Havre - Caumartin",l:"3",lat:48.8737,lng:2.3302,c:"#7DC241",d:"Gallieni"},
+  {n:"Opéra",l:"3",lat:48.8706,lng:2.3316,c:"#7DC241",d:"Gallieni"},
+  {n:"Quatre-Septembre",l:"3",lat:48.8692,lng:2.3378,c:"#7DC241",d:"Gallieni"},
+  {n:"Bourse",l:"3",lat:48.8681,lng:2.3420,c:"#7DC241",d:"Gallieni"},
+  {n:"Sentier",l:"3",lat:48.8659,lng:2.3482,c:"#7DC241",d:"Gallieni"},
+  {n:"Arts et Métiers",l:"3",lat:48.8646,lng:2.3548,c:"#7DC241",d:"Gallieni"},
+  {n:"Temple",l:"3",lat:48.8639,lng:2.3613,c:"#7DC241",d:"Gallieni"},
+  {n:"République",l:"3",lat:48.8674,lng:2.3634,c:"#7DC241",d:"Gallieni"},
+  {n:"Parmentier",l:"3",lat:48.8649,lng:2.3733,c:"#7DC241",d:"Gallieni"},
+  {n:"Rue Saint-Maur",l:"3",lat:48.8616,lng:2.3823,c:"#7DC241",d:"Gallieni"},
+  {n:"Gambetta",l:"3",lat:48.8656,lng:2.3975,c:"#7DC241",d:"Gallieni"},
+  {n:"Pelleport",l:"3",lat:48.8657,lng:2.4060,c:"#7DC241",d:"Gallieni"},
+  {n:"Saint-Fargeau",l:"3",lat:48.8666,lng:2.4147,c:"#7DC241",d:"Gallieni"},
+  {n:"Porte de Bagnolet",l:"3",lat:48.8654,lng:2.4238,c:"#7DC241",d:"Gallieni"},
+  {n:"Gallieni",l:"3",lat:48.8643,lng:2.4157,c:"#7DC241",d:"Gallieni"},
+  // LIGNE 4
+  {n:"Montrouge",l:"4",lat:48.8157,lng:2.3213,c:"#A0006E",d:"Clignancourt"},
+  {n:"Bagneux - Lucie Aubrac",l:"4",lat:48.8011,lng:2.3148,c:"#A0006E",d:"Clignancourt"},
+  {n:"Barbara",l:"4",lat:48.8096,lng:2.3137,c:"#A0006E",d:"Clignancourt"},
+  {n:"Mairie de Montrouge",l:"4",lat:48.8196,lng:2.3197,c:"#A0006E",d:"Clignancourt"},
+  {n:"Alésia",l:"4",lat:48.8285,lng:2.3272,c:"#A0006E",d:"Clignancourt"},
+  {n:"Mouton-Duvernet",l:"4",lat:48.8330,lng:2.3273,c:"#A0006E",d:"Clignancourt"},
+  {n:"Denfert-Rochereau",l:"4",lat:48.8337,lng:2.3325,c:"#A0006E",d:"Clignancourt"},
+  {n:"Raspail",l:"4",lat:48.8383,lng:2.3299,c:"#A0006E",d:"Clignancourt"},
+  {n:"Vavin",l:"4",lat:48.8424,lng:2.3284,c:"#A0006E",d:"Clignancourt"},
+  {n:"Montparnasse - Bienvenüe",l:"4",lat:48.8438,lng:2.3205,c:"#A0006E",d:"Clignancourt"},
+  {n:"Saint-Placide",l:"4",lat:48.8480,lng:2.3235,c:"#A0006E",d:"Clignancourt"},
+  {n:"Saint-Sulpice",l:"4",lat:48.8511,lng:2.3321,c:"#A0006E",d:"Clignancourt"},
+  {n:"Odéon",l:"4",lat:48.8523,lng:2.3404,c:"#A0006E",d:"Clignancourt"},
+  {n:"Saint-Michel",l:"4",lat:48.8529,lng:2.3466,c:"#A0006E",d:"Clignancourt"},
+  {n:"Cité",l:"4",lat:48.8554,lng:2.3469,c:"#A0006E",d:"Clignancourt"},
+  {n:"Les Halles",l:"4",lat:48.8617,lng:2.3469,c:"#A0006E",d:"Clignancourt"},
+  {n:"Étienne Marcel",l:"4",lat:48.8633,lng:2.3487,c:"#A0006E",d:"Clignancourt"},
+  {n:"Réaumur - Sébastopol",l:"4",lat:48.8647,lng:2.3517,c:"#A0006E",d:"Clignancourt"},
+  {n:"Strasbourg - Saint-Denis",l:"4",lat:48.8668,lng:2.3537,c:"#A0006E",d:"Clignancourt"},
+  {n:"Gare de l'Est",l:"4",lat:48.8762,lng:2.3581,c:"#A0006E",d:"Clignancourt"},
+  {n:"Château-Landon",l:"4",lat:48.8791,lng:2.3610,c:"#A0006E",d:"Clignancourt"},
+  {n:"La Chapelle",l:"4",lat:48.8866,lng:2.3615,c:"#A0006E",d:"Clignancourt"},
+  {n:"Marx Dormoy",l:"4",lat:48.8913,lng:2.3598,c:"#A0006E",d:"Clignancourt"},
+  {n:"Marcadet - Poissonniers",l:"4",lat:48.8938,lng:2.3498,c:"#A0006E",d:"Clignancourt"},
+  {n:"Simplon",l:"4",lat:48.8961,lng:2.3462,c:"#A0006E",d:"Clignancourt"},
+  {n:"Porte de Clignancourt",l:"4",lat:48.8997,lng:2.3443,c:"#A0006E",d:"Clignancourt"},
+  // LIGNE 5
+  {n:"Bobigny - Pablo Picasso",l:"5",lat:48.9072,lng:2.4488,c:"#F97032",d:"Place d'Italie"},
+  {n:"Bobigny - Pantin",l:"5",lat:48.9018,lng:2.4334,c:"#F97032",d:"Place d'Italie"},
+  {n:"Église de Pantin",l:"5",lat:48.8953,lng:2.4118,c:"#F97032",d:"Place d'Italie"},
+  {n:"Hoche",l:"5",lat:48.8900,lng:2.3993,c:"#F97032",d:"Place d'Italie"},
+  {n:"Prés Saint-Gervais",l:"5",lat:48.8854,lng:2.3940,c:"#F97032",d:"Place d'Italie"},
+  {n:"Place des Fêtes",l:"5",lat:48.8798,lng:2.3913,c:"#F97032",d:"Place d'Italie"},
+  {n:"Télégraphe",l:"5",lat:48.8756,lng:2.3906,c:"#F97032",d:"Place d'Italie"},
+  {n:"Jourdain",l:"5",lat:48.8724,lng:2.3884,c:"#F97032",d:"Place d'Italie"},
+  {n:"Pyrénées",l:"5",lat:48.8699,lng:2.3853,c:"#F97032",d:"Place d'Italie"},
+  {n:"Jacques Bonsergent",l:"5",lat:48.8721,lng:2.3608,c:"#F97032",d:"Place d'Italie"},
+  {n:"Jaurès",l:"5",lat:48.8831,lng:2.3704,c:"#F97032",d:"Place d'Italie"},
+  {n:"Stalingrad",l:"5",lat:48.8843,lng:2.3668,c:"#F97032",d:"Place d'Italie"},
+  {n:"République",l:"5",lat:48.8674,lng:2.3634,c:"#F97032",d:"Place d'Italie"},
+  {n:"Oberkampf",l:"5",lat:48.8639,lng:2.3692,c:"#F97032",d:"Place d'Italie"},
+  {n:"Richard-Lenoir",l:"5",lat:48.8588,lng:2.3729,c:"#F97032",d:"Place d'Italie"},
+  {n:"Bréguet - Sabin",l:"5",lat:48.8562,lng:2.3715,c:"#F97032",d:"Place d'Italie"},
+  {n:"Bastille",l:"5",lat:48.8533,lng:2.3692,c:"#F97032",d:"Place d'Italie"},
+  {n:"Quai de la Rapée",l:"5",lat:48.8481,lng:2.3686,c:"#F97032",d:"Place d'Italie"},
+  {n:"Gare d'Austerlitz",l:"5",lat:48.8437,lng:2.3656,c:"#F97032",d:"Place d'Italie"},
+  {n:"Saint-Marcel",l:"5",lat:48.8398,lng:2.3616,c:"#F97032",d:"Place d'Italie"},
+  {n:"Campo-Formio",l:"5",lat:48.8365,lng:2.3580,c:"#F97032",d:"Place d'Italie"},
+  {n:"Place d'Italie",l:"5",lat:48.8320,lng:2.3555,c:"#F97032",d:"Place d'Italie"},
+  // LIGNE 6
+  {n:"Nation",l:"6",lat:48.8484,lng:2.3966,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Picpus",l:"6",lat:48.8484,lng:2.4030,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Bel-Air",l:"6",lat:48.8451,lng:2.4022,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Daumesnil",l:"6",lat:48.8385,lng:2.3949,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Dugommier",l:"6",lat:48.8357,lng:2.3874,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Bercy",l:"6",lat:48.8397,lng:2.3790,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Chevaleret",l:"6",lat:48.8337,lng:2.3647,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Corvisart",l:"6",lat:48.8291,lng:2.3516,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Glacière",l:"6",lat:48.8273,lng:2.3460,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Saint-Jacques",l:"6",lat:48.8299,lng:2.3368,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Denfert-Rochereau",l:"6",lat:48.8337,lng:2.3325,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Edgar Quinet",l:"6",lat:48.8425,lng:2.3243,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Montparnasse - Bienvenüe",l:"6",lat:48.8438,lng:2.3205,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Pasteur",l:"6",lat:48.8421,lng:2.3120,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Sèvres - Lecourbe",l:"6",lat:48.8430,lng:2.3038,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Cambronne",l:"6",lat:48.8461,lng:2.2980,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"La Motte-Picquet - Grenelle",l:"6",lat:48.8498,lng:2.2983,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Bir-Hakeim",l:"6",lat:48.8543,lng:2.2895,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Passy",l:"6",lat:48.8582,lng:2.2844,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Trocadéro",l:"6",lat:48.8635,lng:2.2879,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Boissière",l:"6",lat:48.8672,lng:2.2904,c:"#F0971D",d:"Charles de Gaulle"},
+  {n:"Kléber",l:"6",lat:48.8718,lng:2.2944,c:"#F0971D",d:"Charles de Gaulle"},
+  // LIGNE 7
+  {n:"La Courneuve - 8 Mai 1945",l:"7",lat:48.9303,lng:2.3971,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Fort d'Aubervilliers",l:"7",lat:48.9230,lng:2.3913,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Aubervilliers - Pantin",l:"7",lat:48.9126,lng:2.3855,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Porte de la Villette",l:"7",lat:48.8972,lng:2.3824,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Corentin Cariou",l:"7",lat:48.8936,lng:2.3778,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Crimée",l:"7",lat:48.8909,lng:2.3760,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Riquet",l:"7",lat:48.8876,lng:2.3715,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Louis Blanc",l:"7",lat:48.8804,lng:2.3643,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Poissonnière",l:"7",lat:48.8743,lng:2.3497,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Cadet",l:"7",lat:48.8762,lng:2.3461,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Le Peletier",l:"7",lat:48.8753,lng:2.3413,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Chaussée d'Antin - La Fayette",l:"7",lat:48.8739,lng:2.3352,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Pyramides",l:"7",lat:48.8649,lng:2.3361,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Pont Neuf",l:"7",lat:48.8576,lng:2.3448,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Pont Marie",l:"7",lat:48.8541,lng:2.3548,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Sully - Morland",l:"7",lat:48.8504,lng:2.3573,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Jussieu",l:"7",lat:48.8468,lng:2.3551,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Place Monge",l:"7",lat:48.8435,lng:2.3522,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Censier - Daubenton",l:"7",lat:48.8404,lng:2.3548,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Les Gobelins",l:"7",lat:48.8361,lng:2.3553,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Villejuif - Louis Aragon",l:"7",lat:48.7893,lng:2.3647,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  {n:"Mairie d'Ivry",l:"7",lat:48.8075,lng:2.3850,c:"#F2A4B8",d:"Villejuif / Mairie d'Ivry"},
+  // LIGNE 8
+  {n:"Balard",l:"8",lat:48.8381,lng:2.2789,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Lourmel",l:"8",lat:48.8385,lng:2.2862,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Boucicaut",l:"8",lat:48.8401,lng:2.2932,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Félix Faure",l:"8",lat:48.8417,lng:2.2999,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Commerce",l:"8",lat:48.8444,lng:2.2990,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"École Militaire",l:"8",lat:48.8553,lng:2.3060,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"La Tour-Maubourg",l:"8",lat:48.8590,lng:2.3105,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Invalides",l:"8",lat:48.8620,lng:2.3134,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Madeleine",l:"8",lat:48.8701,lng:2.3249,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Richelieu - Drouot",l:"8",lat:48.8722,lng:2.3413,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Grands Boulevards",l:"8",lat:48.8714,lng:2.3448,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Bonne Nouvelle",l:"8",lat:48.8693,lng:2.3507,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Saint-Ambroise",l:"8",lat:48.8610,lng:2.3740,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Voltaire",l:"8",lat:48.8568,lng:2.3818,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Charonne",l:"8",lat:48.8528,lng:2.3867,c:"#D282BE",d:"Pointe du Lac"},
+  {n:"Rue des Boulets",l:"8",lat:48.8491,lng:2.3910,c:"#D282BE",d:"Pointe du Lac"},
+  // LIGNE 9
+  {n:"Pont de Sèvres",l:"9",lat:48.8276,lng:2.2310,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Billancourt",l:"9",lat:48.8340,lng:2.2344,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Marcel Sembat",l:"9",lat:48.8366,lng:2.2429,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Exelmans",l:"9",lat:48.8380,lng:2.2635,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Michel-Ange - Molitor",l:"9",lat:48.8435,lng:2.2681,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Jasmin",l:"9",lat:48.8488,lng:2.2736,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Ranelagh",l:"9",lat:48.8560,lng:2.2731,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"La Muette",l:"9",lat:48.8602,lng:2.2761,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Iéna",l:"9",lat:48.8644,lng:2.2956,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Alma - Marceau",l:"9",lat:48.8641,lng:2.3031,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Miromesnil",l:"9",lat:48.8752,lng:2.3134,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Saint-Augustin",l:"9",lat:48.8775,lng:2.3200,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Liège",l:"9",lat:48.8796,lng:2.3232,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Brochant",l:"9",lat:48.8917,lng:2.3218,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Guy Môquet",l:"9",lat:48.8961,lng:2.3296,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"La Fourche",l:"9",lat:48.8856,lng:2.3217,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Porte de Clichy",l:"9",lat:48.8961,lng:2.3098,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Mairie de Saint-Ouen",l:"9",lat:48.9110,lng:2.3333,c:"#D0A954",d:"Mairie de Montreuil"},
+  {n:"Mairie de Montreuil",l:"9",lat:48.8581,lng:2.4386,c:"#D0A954",d:"Mairie de Montreuil"},
+  // LIGNE 10
+  {n:"Boulogne - Pont de Saint-Cloud",l:"10",lat:48.8375,lng:2.2327,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Boulogne - Jean Jaurès",l:"10",lat:48.8372,lng:2.2430,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Porte d'Auteuil",l:"10",lat:48.8467,lng:2.2590,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Chardon Lagache",l:"10",lat:48.8465,lng:2.2719,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Mirabeau",l:"10",lat:48.8476,lng:2.2793,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Javel - André Citroën",l:"10",lat:48.8468,lng:2.2872,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Charles Michels",l:"10",lat:48.8470,lng:2.2943,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Avenue Émile Zola",l:"10",lat:48.8473,lng:2.2979,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Dupleix",l:"10",lat:48.8506,lng:2.2974,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Sèvres - Lecourbe",l:"10",lat:48.8430,lng:2.3038,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Duroc",l:"10",lat:48.8478,lng:2.3146,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Vaneau",l:"10",lat:48.8497,lng:2.3198,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Sèvres - Babylone",l:"10",lat:48.8513,lng:2.3256,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Mabillon",l:"10",lat:48.8529,lng:2.3347,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Cluny - La Sorbonne",l:"10",lat:48.8516,lng:2.3454,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Cardinal Lemoine",l:"10",lat:48.8497,lng:2.3524,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Jussieu",l:"10",lat:48.8468,lng:2.3551,c:"#C9A015",d:"Gare d'Austerlitz"},
+  {n:"Gare d'Austerlitz",l:"10",lat:48.8437,lng:2.3656,c:"#C9A015",d:"Gare d'Austerlitz"},
+  // LIGNE 11
+  {n:"Châtelet",l:"11",lat:48.8597,lng:2.3469,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"Hôtel de Ville",l:"11",lat:48.8571,lng:2.3516,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"Rambuteau",l:"11",lat:48.8613,lng:2.3528,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"Arts et Métiers",l:"11",lat:48.8646,lng:2.3548,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"République",l:"11",lat:48.8674,lng:2.3634,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"Goncourt",l:"11",lat:48.8701,lng:2.3723,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"Belleville",l:"11",lat:48.8715,lng:2.3708,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"Pyrénées",l:"11",lat:48.8699,lng:2.3853,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"Place des Fêtes",l:"11",lat:48.8798,lng:2.3913,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"Télégraphe",l:"11",lat:48.8756,lng:2.3906,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"Porte des Lilas",l:"11",lat:48.8768,lng:2.4066,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  {n:"Mairie des Lilas",l:"11",lat:48.8773,lng:2.4161,c:"#704B1C",d:"Rosny Bois-Perrier"},
+  // LIGNE 12
+  {n:"Mairie d'Issy",l:"12",lat:48.8226,lng:2.2748,c:"#007852",d:"Aubervilliers"},
+  {n:"Corentin Celton",l:"12",lat:48.8220,lng:2.2810,c:"#007852",d:"Aubervilliers"},
+  {n:"Assemblée Nationale",l:"12",lat:48.8603,lng:2.3210,c:"#007852",d:"Aubervilliers"},
+  {n:"Concorde",l:"12",lat:48.8656,lng:2.3211,c:"#007852",d:"Aubervilliers"},
+  {n:"Madeleine",l:"12",lat:48.8701,lng:2.3249,c:"#007852",d:"Aubervilliers"},
+  {n:"Saint-Lazare",l:"12",lat:48.8749,lng:2.3250,c:"#007852",d:"Aubervilliers"},
+  {n:"Trinité - d'Estienne d'Orves",l:"12",lat:48.8777,lng:2.3333,c:"#007852",d:"Aubervilliers"},
+  {n:"Saint-Georges",l:"12",lat:48.8799,lng:2.3364,c:"#007852",d:"Aubervilliers"},
+  {n:"Pigalle",l:"12",lat:48.8835,lng:2.3375,c:"#007852",d:"Aubervilliers"},
+  {n:"Abbesses",l:"12",lat:48.8843,lng:2.3384,c:"#007852",d:"Aubervilliers"},
+  {n:"Lamarck - Caulaincourt",l:"12",lat:48.8882,lng:2.3385,c:"#007852",d:"Aubervilliers"},
+  {n:"Jules Joffrin",l:"12",lat:48.8908,lng:2.3445,c:"#007852",d:"Aubervilliers"},
+  {n:"Marcadet - Poissonniers",l:"12",lat:48.8938,lng:2.3498,c:"#007852",d:"Aubervilliers"},
+  {n:"Marx Dormoy",l:"12",lat:48.8913,lng:2.3598,c:"#007852",d:"Aubervilliers"},
+  {n:"Porte de la Chapelle",l:"12",lat:48.8985,lng:2.3620,c:"#007852",d:"Aubervilliers"},
+  {n:"Front Populaire",l:"12",lat:48.9076,lng:2.3695,c:"#007852",d:"Aubervilliers"},
+  {n:"Mairie d'Aubervilliers",l:"12",lat:48.9132,lng:2.3831,c:"#007852",d:"Aubervilliers"},
+  // LIGNE 13
+  {n:"Châtillon - Montrouge",l:"13",lat:48.8028,lng:2.3016,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Alésia",l:"13",lat:48.8285,lng:2.3272,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Mouton-Duvernet",l:"13",lat:48.8330,lng:2.3273,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Gaîté",l:"13",lat:48.8384,lng:2.3222,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Pernety",l:"13",lat:48.8337,lng:2.3179,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Plaisance",l:"13",lat:48.8299,lng:2.3127,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Varenne",l:"13",lat:48.8568,lng:2.3155,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Saint-François-Xavier",l:"13",lat:48.8498,lng:2.3127,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Duroc",l:"13",lat:48.8478,lng:2.3146,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Nationale",l:"13",lat:48.8360,lng:2.3617,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Guy Môquet",l:"13",lat:48.8961,lng:2.3296,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"La Fourche",l:"13",lat:48.8856,lng:2.3217,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Porte de Clichy",l:"13",lat:48.8961,lng:2.3098,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Mairie de Saint-Ouen",l:"13",lat:48.9110,lng:2.3333,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Carrefour Pleyel",l:"13",lat:48.9198,lng:2.3327,c:"#98C3E8",d:"Saint-Denis Université"},
+  {n:"Saint-Denis - Université",l:"13",lat:48.9339,lng:2.3591,c:"#98C3E8",d:"Saint-Denis Université"},
+  // LIGNE 14
+  {n:"Olympiades",l:"14",lat:48.8264,lng:2.3642,c:"#5E5BFF",d:"Saint-Lazare"},
+  {n:"Bibliothèque François Mitterrand",l:"14",lat:48.8297,lng:2.3769,c:"#5E5BFF",d:"Saint-Lazare"},
+  {n:"Cour Saint-Émilion",l:"14",lat:48.8324,lng:2.3855,c:"#5E5BFF",d:"Saint-Lazare"},
+  {n:"Bercy",l:"14",lat:48.8397,lng:2.3790,c:"#5E5BFF",d:"Saint-Lazare"},
+  {n:"Gare de Lyon",l:"14",lat:48.8442,lng:2.3733,c:"#5E5BFF",d:"Saint-Lazare"},
+  {n:"Châtelet",l:"14",lat:48.8597,lng:2.3469,c:"#5E5BFF",d:"Saint-Lazare"},
+  {n:"Pyramides",l:"14",lat:48.8649,lng:2.3361,c:"#5E5BFF",d:"Saint-Lazare"},
+  {n:"Saint-Lazare",l:"14",lat:48.8749,lng:2.3250,c:"#5E5BFF",d:"Saint-Lazare"},
+  {n:"Porte de Clichy",l:"14",lat:48.8961,lng:2.3098,c:"#5E5BFF",d:"Saint-Lazare"},
+  {n:"Mairie de Saint-Ouen",l:"14",lat:48.9110,lng:2.3333,c:"#5E5BFF",d:"Saint-Lazare"},
+];
+
+// ════════════════════════════════
+// STATE
+// ════════════════════════════════
+let state = {
+  page: 'home',
+  gpsActive: false,
+  gpsWatch: null,
+  myLat: null, myLng: null,
+  alarmStation: null,  // {n, l, lat, lng, c, d}
+  alarmDist: null,
+  lineFilter: null,
+  searchQ: '',
+};
+
+// ════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════
+function goTo(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('on'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name)?.classList.add('on');
+  state.page = name;
+  if (name === 'search') renderResults();
+}
+
+// ════════════════════════════════
+// CLOCK
+// ════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+updateClock();
+setInterval(updateClock, 15000);
+
+// ════════════════════════════════
+// GPS
+// ════════════════════════════════
+function haversine(a, b, c, d) {
+  const R = 6371000, dLat = (c-a)*Math.PI/180, dLng = (d-b)*Math.PI/180;
+  const x = Math.sin(dLat/2)**2 + Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+
+function initGPS() {
+  if (!navigator.geolocation) { showToast('GPS non disponible sur ce navigateur'); return; }
+  const btn = document.getElementById('gps-btn');
+  const txt = document.getElementById('gps-text');
+  btn.textContent = '…'; btn.disabled = true;
+  txt.textContent = 'Obtention du signal GPS…';
+  navigator.geolocation.getCurrentPosition(
+    pos => onGPSPos(pos, true),
+    err => {
+      txt.textContent = 'GPS refusé — active la localisation';
+      document.getElementById('gps-dot').className = 'gps-dot';
+      btn.textContent = 'Réessayer'; btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 12000 }
+  );
+}
+
+function onGPSPos(pos, first) {
+  state.myLat = pos.coords.latitude;
+  state.myLng = pos.coords.longitude;
+  state.gpsActive = true;
+  const acc = Math.round(pos.coords.accuracy);
+  document.getElementById('gps-dot').className = 'gps-dot on';
+  document.getElementById('gps-text').textContent = `GPS actif · précision ±${acc}m`;
+  document.getElementById('gps-btn').textContent = '✓'; document.getElementById('gps-btn').disabled = true;
+  if (first) {
+    // start watch
+    if (state.gpsWatch) navigator.geolocation.clearWatch(state.gpsWatch);
+    state.gpsWatch = navigator.geolocation.watchPosition(onGPSPos, null, { enableHighAccuracy: true });
+  }
+  if (state.alarmStation) checkAlarmDistance();
+  updateAlarmRing();
+}
+
+function checkAlarmDistance() {
+  if (!state.alarmStation || state.myLat === null) return;
+  const d = haversine(state.myLat, state.myLng, state.alarmStation.lat, state.alarmStation.lng);
+  state.alarmDist = Math.round(d);
+  updateAlarmRing();
+  updateBanner();
+  if (d < 350) triggerAlarm();
+}
+
+function updateAlarmRing() {
+  if (!state.alarmStation) return;
+  const dist = state.alarmDist;
+  const el = document.getElementById('ring-dist');
+  const status = document.getElementById('ring-status');
+  const path = document.getElementById('ring-path');
+  if (dist === null) {
+    el.textContent = '—'; status.textContent = 'En attente du GPS…';
+    return;
+  }
+  el.textContent = dist > 999 ? (dist/1000).toFixed(1)+'km' : dist;
+  document.querySelector('.ring-unit').textContent = dist > 999 ? '' : 'mètres';
+  const maxDist = 3000;
+  const pct = Math.max(0, 1 - dist / maxDist);
+  const circ = 351.86;
+  path.style.strokeDashoffset = circ - (circ * pct);
+  path.style.stroke = dist < 500 ? 'var(--red)' : dist < 1000 ? 'var(--gold)' : 'var(--green)';
+  status.textContent = dist < 350 ? '🔴 ARRIVÉE !' : dist < 800 ? '🟡 Presque arrivé…' : '🟢 Surveillance active';
+  document.getElementById('stat-stops').textContent = dist < 500 ? '1' : dist < 1500 ? '2' : '3+';
+  document.getElementById('stat-time').textContent = Math.max(1, Math.round(dist / 350));
+}
+
+function updateBanner() {
+  if (!state.alarmStation) return;
+  const d = state.alarmDist;
+  document.getElementById('banner-dist').textContent = d !== null ? (d > 999 ? (d/1000).toFixed(1)+'km' : d+'m') : '—';
+}
+
+// ════════════════════════════════
+// ALARM MANAGEMENT
+// ════════════════════════════════
+function setAlarm(station) {
+  state.alarmStation = station;
+  state.alarmDist = null;
+  // Update alarm page
+  document.getElementById('alarm-title').textContent = station.n;
+  document.getElementById('alarm-sub').textContent = `Ligne ${station.l} · ${station.d}`;
+  document.getElementById('ring-station-name').textContent = station.n;
+  document.getElementById('stat-line').textContent = 'L' + station.l;
+  document.getElementById('stat-time').textContent = '—';
+  document.getElementById('stat-stops').textContent = '—';
+  document.getElementById('ring-dist').textContent = '—';
+  document.querySelector('.ring-unit').textContent = 'mètres';
+  document.getElementById('ring-status').textContent = state.gpsActive ? 'Surveillance active' : 'Active le GPS pour la distance';
+  // Banner
+  document.getElementById('alarm-banner').classList.add('show');
+  document.getElementById('alarm-badge').classList.add('on');
+  document.getElementById('banner-station').textContent = station.n;
+  document.getElementById('banner-detail').textContent = `Ligne ${station.l} · ${station.d}`;
+  document.getElementById('banner-dist').textContent = '…';
+  // Stops viz
+  renderStopsLine(station);
+  if (state.myLat !== null) checkAlarmDistance();
+  if (!state.gpsActive) initGPS();
+  showToast('🔔 Alarme activée — ' + station.n);
+  goTo('alarm');
+}
+
+function quickAlarm(name, line, dir, color, lat, lng) {
+  setAlarm({ n: name, l: line, d: dir, c: color, lat, lng });
+}
+
+function cancelAlarm() {
+  state.alarmStation = null; state.alarmDist = null;
+  document.getElementById('alarm-banner').classList.remove('show');
+  document.getElementById('alarm-badge').classList.remove('on');
+  document.getElementById('ring-dist').textContent = '—';
+  document.getElementById('ring-status').textContent = 'Aucune alarme';
+  document.getElementById('ring-path').style.strokeDashoffset = 351.86;
+  showToast('Alarme annulée');
+  goTo('home');
+}
+
+function triggerAlarm() {
+  if (state.gpsWatch) { navigator.geolocation.clearWatch(state.gpsWatch); state.gpsWatch = null; }
+  document.getElementById('ringing').classList.add('active');
+  if (navigator.vibrate) navigator.vibrate([600,200,600,200,600,200,800]);
+}
+
+function triggerAlarmManual() { triggerAlarm(); }
+
+function dismissAlarm() {
+  document.getElementById('ringing').classList.remove('active');
+  state.alarmStation = null; state.alarmDist = null;
+  document.getElementById('alarm-banner').classList.remove('show');
+  document.getElementById('alarm-badge').classList.remove('on');
+  showToast('Bonne arrivée ! 🎉');
+  goTo('home');
+}
+
+// ════════════════════════════════
+// STOPS LINE
+// ════════════════════════════════
+function renderStopsLine(station) {
+  const labels = ['Départ','A','B','C','D',station.n];
+  const passed = 2, current = 3;
+  const container = document.getElementById('stops-line');
+  container.innerHTML = '';
+  labels.forEach((label, i) => {
+    const node = document.createElement('div');
+    node.className = 'stop-node';
+    let cls = i < passed ? 'passed' : i === passed ? 'current' : i === labels.length-1 ? 'target' : '';
+    const sym = i === labels.length-1 ? '🔔' : i === passed ? '●' : i < passed ? '✓' : String.fromCharCode(65+i-passed);
+    const nameEl = document.createElement('div');
+    nameEl.className = 'sn-name' + (i === labels.length-1 ? ' target-label' : '');
+    nameEl.textContent = label;
+    node.innerHTML = `<div class="sc ${cls}">${sym}</div>`;
+    node.appendChild(nameEl);
+    container.appendChild(node);
+    if (i < labels.length-1) {
+      const conn = document.createElement('div');
+      conn.className = 'stop-conn' + (i < passed ? ' passed' : '');
+      container.appendChild(conn);
+    }
+  });
+}
+
+// ════════════════════════════════
+// SEARCH
+// ════════════════════════════════
+const LINE_COLORS = {
+  "1":"#F2C931","2":"#007DC5","3":"#7DC241","4":"#A0006E","5":"#F97032",
+  "6":"#F0971D","7":"#F2A4B8","8":"#D282BE","9":"#D0A954","10":"#C9A015",
+  "11":"#704B1C","12":"#007852","13":"#98C3E8","14":"#5E5BFF"
+};
+
+function buildLineChips() {
+  const lines = [...new Set(STATIONS.map(s => s.l))].sort((a,b) => parseInt(a)-parseInt(b));
+  document.getElementById('line-chips').innerHTML = lines.map(l =>
+    `<button class="lchip on" style="background:${LINE_COLORS[l]||'#888'}" data-l="${l}" onclick="toggleLineChip('${l}',this)">${l}</button>`
+  ).join('');
+}
+
+function toggleLineChip(l, el) {
+  if (state.lineFilter === l) {
+    state.lineFilter = null;
+    document.querySelectorAll('.lchip').forEach(c => c.classList.add('on'));
+  } else {
+    state.lineFilter = l;
+    document.querySelectorAll('.lchip').forEach(c => { c.classList.remove('on'); if (c.dataset.l === l) c.classList.add('on'); });
+  }
+  renderResults();
+}
+
+function onSearch(v) {
+  state.searchQ = v.toLowerCase();
+  document.getElementById('search-clear').classList.toggle('show', v.length > 0);
+  renderResults();
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear').classList.remove('show');
+  state.searchQ = '';
+  renderResults();
+}
+
+function renderResults() {
+  const filtered = STATIONS.filter(s => {
+    const mQ = !state.searchQ || s.n.toLowerCase().includes(state.searchQ) || s.l.includes(state.searchQ);
+    const mL = !state.lineFilter || s.l === state.lineFilter;
+    return mQ && mL;
+  });
+  const noRes = document.getElementById('no-results');
+  noRes.classList.toggle('show', filtered.length === 0);
+  document.getElementById('results-list').innerHTML = filtered.map(s => `
+    <div class="result-item card" onclick='selectStation(${JSON.stringify(s)})'>
+      <div class="ri-badge" style="background:${s.c}">${s.l}</div>
+      <div class="ri-info">
+        <div class="ri-name">${s.n}</div>
+        <div class="ri-meta">Ligne ${s.l} · ${s.d}</div>
+      </div>
+      <div class="ri-cta">🔔 Alarme</div>
+    </div>
+  `).join('');
+}
+
+function selectStation(s) {
+  setAlarm(s);
+}
+
+// ════════════════════════════════
+// SHARE
+// ════════════════════════════════
+function shareApp() {
+  if (navigator.share) {
+    navigator.share({ title:'MetroWake', text:'Ne rate plus jamais ta station !', url: window.location.href });
+  } else {
+    navigator.clipboard?.writeText(window.location.href);
+    showToast('Lien copié !');
+  }
+}
+
+// ════════════════════════════════
+// TOAST
+// ════════════════════════════════
+let toastT;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ════════════════════════════════
+// INIT
+// ════════════════════════════════
+buildLineChips();
+renderResults();
+document.getElementById('station-count-footer').textContent = STATIONS.length;
+</script>
+</body>
+</html>
